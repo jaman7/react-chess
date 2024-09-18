@@ -183,7 +183,6 @@ export const setMove = (pieces: IPieces[], start: number, end: number, passantPo
       }
     }
     const passant = passantPos ?? Store.passantPos;
-    console.log(passant);
     if (draft[start].name === PAWN_WHITE && (end - start === -7 || end - start === 9)) {
       if (start + 1 === passant) {
         draft[start + 1] = new FillerPiece(null, start + 1);
