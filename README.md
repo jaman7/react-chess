@@ -1,15 +1,15 @@
-# sample-react-dropdown-tabs
+# sample-react-chess
 
 ## Use git clone.
 
 ```
-git clone https://github.com/jaman7/react-dropdown-tabs.git
+git clone https://github.com/jaman7/react-chess.git
 ```
 
 ## required
 
 ```
-node 20.11.0
+node >= 18.00.0
 ```
 
 ## install
@@ -24,4 +24,4 @@ npm install
 npm run dev
 ```
 
-"# react-dropdown-tabs"
+"# sample-react-chess"
