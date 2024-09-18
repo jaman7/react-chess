@@ -1,0 +1,38 @@
+.label {
+  outline: none !important;
+  background-color: transparent;
+  color: $colorWhite;
+  border: none;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: initial;
+  transition: transform 1s ease-in-out;
+
+  &.rotated {
+    transform: rotate(180deg);
+  }
+}
+
+.row_label {
+  display: flex;
+  flex-direction: column;
+}
+
+.col_label {
+  display: flex;
+  width: auto;
+}
+
+.label-height {
+  height: 10vmin;
+}
+
+.label-width {
+  width: 10vmin;
+}
+
+.label-margin {
+  margin: 0 20px;
+}

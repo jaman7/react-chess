@@ -1,0 +1,16 @@
+html {
+  text-rendering: optimizelegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  color: $colorWhite;
+  font-weight: 400;
+  font-family: $fontRoboto;
+  -moz-osx-font-smoothing: grayscale !important;
+  -webkit-font-smoothing: subpixel-antialiased !important;
+  font-size: $fontSizeDefault !important;
+  background-color: $colorDark2;
+}

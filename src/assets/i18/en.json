@@ -1,0 +1,18 @@
+{
+  "buttons": {
+    "start": "Start game",
+    "stop": "Stop game",
+    "reset": "Reset game",
+    "whiteChoose": "White choose",
+    "blackChoose": "Black choose",
+    "yes": "Yes",
+    "no": "No"
+  },
+  "game": {
+    "status": {
+      "win": "Congratulations, you win!",
+      "lost": "Unfortunately, the loss..."
+    },
+    "nextGame": "Do you want to continue the next game in overtime?"
+  }
+}

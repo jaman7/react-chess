@@ -1,0 +1,35 @@
+%flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+%flex-v-center {
+  display: flex;
+  align-items: center;
+}
+
+%scrollbar-v {
+  &::-webkit-scrollbar {
+    width: 8px;
+    background: $colorWhite;
+    border-radius: 8px;
+
+    &-track {
+      background: $colorWhite;
+      margin: 0;
+      border-radius: 8px;
+    }
+
+    &-thumb {
+      background: $colorLightBlue;
+      border-radius: 6px;
+      min-height: 100px;
+
+      &:hover {
+        background: $colorBlue;
+        cursor: pointer;
+      }
+    }
+  }
+}

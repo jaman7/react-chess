@@ -1,0 +1,32 @@
+.main {
+  display: flex;
+  padding-top: 1rem;
+
+  @include mq(maxlg) {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+}
+
+.board {
+  background-color: $colorDark;
+  display: flex;
+  flex-direction: column;
+  height: fit-content;
+  transition: transform 1s ease-in-out;
+  order: 2;
+
+  @include mq(maxlg) {
+    order: 3;
+  }
+
+  &.rotated {
+    transform: rotate(180deg);
+  }
+
+  &-main {
+    width: 100%;
+    border: 1px solid $colorWhite;
+    aspect-ratio: 1;
+  }
+}

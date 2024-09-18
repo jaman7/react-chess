@@ -1,0 +1,140 @@
+@mixin extended-tile($size: 100%) {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  z-index: 1;
+  width: $size;
+  height: $size;
+}
+
+%selected {
+  position: relative;
+
+  &::after,
+  &::before {
+    @include extended-tile(100%);
+
+    background-color: rgba($colorGreen, 0.5);
+  }
+}
+
+%highlighted {
+  position: relative;
+
+  &::after,
+  &::before {
+    @include extended-tile(50%);
+
+    background-color: rgba($colorBlue, 0.7);
+  }
+}
+
+%highlighted-capture {
+  position: relative;
+
+  &::after,
+  &::before {
+    @include extended-tile(99%);
+
+    background-color: rgba($colorRed, 0.5);
+  }
+}
+
+.tile {
+  outline: none;
+  height: 10vmin;
+  width: 10vmin;
+  transition:
+    background-color 500ms,
+    transform 500ms ease-in-out;
+  position: relative;
+  aspect-ratio: 1;
+
+  &.rotated {
+    transform: rotate(180deg);
+  }
+
+  &-white {
+    background-color: $colorLight;
+
+    &-selected {
+      @extend %selected;
+    }
+
+    &-highlighted {
+      @extend %highlighted;
+    }
+
+    &-capture {
+      @extend %highlighted-capture;
+    }
+
+    &-incheck {
+      animation: flash-white 0.5s infinite;
+      background-color: lighten($colorRed, 15%);
+    }
+  }
+
+  &-black {
+    background-color: $colorDark;
+
+    &-selected {
+      @extend %selected;
+    }
+
+    &-highlighted {
+      @extend %highlighted;
+    }
+
+    &-capture {
+      @extend %highlighted-capture;
+    }
+
+    &-incheck {
+      animation: flash-black 0.5s infinite;
+      background-color: lighten($colorRed, 15%);
+    }
+  }
+
+  &-mated {
+    background-color: $colorRed;
+  }
+
+  &-stale {
+    background-color: lighten($colorRed, 20%);
+  }
+
+  & .piece {
+    position: relative;
+    z-index: 2;
+  }
+}
+
+@keyframes flash-white {
+  0%,
+  50%,
+  100% {
+    background-color: lighten($colorRed, 15%);
+  }
+
+  25%,
+  75% {
+    background-color: $colorLight;
+  }
+}
+
+@keyframes flash-black {
+  0%,
+  50%,
+  100% {
+    background-color: lighten($colorRed, 15%);
+  }
+
+  25%,
+  75% {
+    background-color: $colorDark2;
+  }
+}
