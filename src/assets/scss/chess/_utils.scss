@@ -6,6 +6,18 @@
   cursor: pointer;
 }
 
+.not-allowed {
+  cursor: not-allowed;
+}
+
+.move {
+  cursor: move;
+}
+
+.grab {
+  cursor: grab;
+}
+
 .w-20 {
   width: 20px;
 }

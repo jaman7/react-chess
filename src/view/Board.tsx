@@ -1,12 +1,12 @@
 import { inject, observer } from 'mobx-react';
-import { IPieces, IStoreProps } from 'store/Store.model';
+import { IPieces, IStoreProps, TypeColor } from 'store/Store.model';
 import Tile from './Tile';
 import { ROW_SIZE } from 'store/store.constance';
-import { calcSquareColor } from 'utils';
+import { calcSquareColor, setCursor } from 'utils';
 import React from 'react';
 
 const Board: React.FC<IStoreProps> = ({ Store }) => {
-  const { board = [], isBoardRotated, botRunning, mated } = Store || {};
+  const { board = [], isBoardRotated, botRunning = false, mated, userColor } = Store || {};
 
   const handleClick = (index: number) => {
     if (!botRunning && !mated) {
@@ -15,12 +15,13 @@ const Board: React.FC<IStoreProps> = ({ Store }) => {
   };
 
   const renderTile = React.useCallback(
-    (piece: IPieces, tileColor: string, index: number) => {
+    (piece: IPieces, tileColor: string, cursor: string, index: number) => {
       return (
         <Tile
           key={index}
           icon={piece.icon}
           color={tileColor}
+          cursor={cursor}
           className={isBoardRotated ? 'rotated' : ''}
           onClick={() => handleClick(index)}
         />
@@ -36,7 +37,8 @@ const Board: React.FC<IStoreProps> = ({ Store }) => {
           const index = rowIndex * ROW_SIZE + colIndex;
           const piece = board[index];
           const tileColor = calcSquareColor(rowIndex, colIndex, board);
-          return renderTile(piece, tileColor, index);
+          const cursor = setCursor(piece, userColor as TypeColor, botRunning);
+          return renderTile(piece, tileColor, cursor, index);
         })}
       </div>
     ));

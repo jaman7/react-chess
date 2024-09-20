@@ -86,3 +86,23 @@ export const formatTime = (time: number): string => {
   const formattedSeconds = `${seconds < 10 ? `0${seconds}` : seconds}`;
   return `${formattedHours}${formattedMinutes}:${formattedSeconds}`;
 };
+
+export const setCursor = (piece: IPieces, userColor: TypeColor, botRunning: boolean): string => {
+  const { player, possible, possibleCapture } = piece || {};
+  let cursor = 'default';
+  switch (true) {
+    case player === userColor:
+      cursor = 'pointer';
+      break;
+    case possible:
+      cursor = 'move';
+      break;
+    case possibleCapture:
+      cursor = 'grab';
+      break;
+    default:
+      cursor = 'default';
+      break;
+  }
+  return !botRunning ? cursor : 'not-allowed';
+};
