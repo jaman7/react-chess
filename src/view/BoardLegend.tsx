@@ -6,9 +6,9 @@ interface IProps {
 const BoardLegend: React.FC<IProps> = ({ lists, isBoardRotated }: IProps) => {
   const renderRowColNums = () => {
     return lists?.map(el => {
-      const classPadding = typeof el === 'number' ? 'w-20 label-height' : 'h-20 label-width';
+      const classNameOfSize = typeof el === 'number' ? 'w-20 label-height' : 'h-20 label-width';
       return (
-        <span key={el} className={`label ${classPadding} ${isBoardRotated ? 'rotated' : ''}`}>
+        <span key={el} className={`label ${classNameOfSize} ${isBoardRotated ? 'rotated' : ''}`}>
           {el}
         </span>
       );

@@ -86,6 +86,13 @@ export const NO_PASSANT = 65;
 export const NO_MOVE = 100;
 export const BEST_VALUE_INIT = -9999;
 
+export const difficultyLevels = {
+  easy: 2, // Shallow search, bot looks 2 moves ahead
+  medium: 4, // Moderate depth
+  hard: 6, // Deep search, stronger bot
+  expert: 8, // Deepest, very strong bot
+};
+
 export enum PiecesNames {
   PAWN_WHITE = 'PAWN_WHITE',
   PAWN_BLACK = 'PAWN_BLACK',

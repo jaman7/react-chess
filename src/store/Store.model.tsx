@@ -141,6 +141,7 @@ export interface IStore {
   reset?: () => void;
   setUserPlayerColor?: (rotate?: boolean) => void;
   setNewGameInTurn?: () => void;
+  setDifficultyLevel?: (level: number) => void;
 }
 
 export interface IStoreProps {

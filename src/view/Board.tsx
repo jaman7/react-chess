@@ -27,7 +27,7 @@ const Board: React.FC<IStoreProps> = ({ Store }) => {
         />
       );
     },
-    [board, botRunning, mated, isBoardRotated]
+    [board, botRunning, mated, isBoardRotated, userColor]
   );
 
   const renderBoard = () =>

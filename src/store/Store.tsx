@@ -56,6 +56,7 @@ class Store implements IStore {
   historyMoves: IHistoryMoves[] = [];
   gameTurn: number = -1;
   disableStartBeforeReset: boolean = false;
+  difficultyLevel: number = 4;
 
   get isGameStarted(): boolean {
     return this.gameStarted;
@@ -152,6 +153,12 @@ class Store implements IStore {
     });
   }
 
+  setDifficultyLevel = (level: number): void => {
+    runInAction(() => {
+      this.difficultyLevel = level;
+    });
+  };
+
   resetTurn() {
     runInAction(() => {
       this.board = initializeBoard();
@@ -198,6 +205,7 @@ class Store implements IStore {
       this.repetition = 0;
       this.historyMoves = [];
       this.gameTurn = -1;
+      this.difficultyLevel = 4;
     });
   }
 
@@ -265,7 +273,8 @@ class Store implements IStore {
   triggerBotMove = (): void => {
     runInAction(() => {
       this.setCurrentBotColor();
-      setTimeout(() => this.executeBot(3, this.botColor), 700);
+
+      setTimeout(() => this.executeBot(this.difficultyLevel, this.botColor), 700);
     });
   };
 
@@ -275,46 +284,42 @@ class Store implements IStore {
       this.message = 'Bot cannot run';
       return;
     }
-
     const copyBoard = [...this.board];
     let bestMove = { start: 100, end: 100 };
     const randStarts = randPositions();
     const randEnds = randPositions();
     const moves = posibilityMoves(botColor, copyBoard, randStarts, randEnds);
-    let bestValue = -99999;
-
+    const moveCount = moves.length;
+    let bestValue = -10000;
+    if (moveCount === 0) return;
     for (const move of moves) {
       const { start, end } = move || {};
-      if (moves.length && this.repetition >= 2 && start === this.botSecondPos && end === this.botFirstPos) {
+      if (this.repetition >= 2 && start === this.botSecondPos && end === this.botFirstPos) {
         this.repetition = 0;
-      } else {
-        const testBoard = [...this.board];
-        const updatedBoard = [...setMove(testBoard, start, end)];
-        const passantPos = getPassant(botColor, testBoard, start, end);
-        const evaluation = miniMax(depth - 1, false, -Infinity, Infinity, updatedBoard, randStarts, randEnds, passantPos, botColor);
-        if (evaluation >= bestValue) {
-          bestValue = evaluation;
-          bestMove = { start, end };
-        }
+        continue;
+      }
+      const updatedBoard = setMove([...copyBoard], start, end);
+      const passantPos = getPassant(botColor, copyBoard, start, end);
+      const evaluation = miniMax(depth - 1, false, -10000, 10000, updatedBoard, randStarts, randEnds, passantPos, botColor);
+      if (evaluation > bestValue) {
+        bestValue = evaluation;
+        bestMove = { start, end };
       }
     }
-
-    if (bestMove.end != 100) {
+    if (bestMove.end !== 100) {
       runInAction(() => {
         if (bestMove.start === this.botSecondPos && bestMove.end === this.botFirstPos) {
           this.repetition++;
         } else {
           this.repetition = 0;
         }
+        this.executeMove(botColor, bestMove.start, bestMove.end);
       });
-
-      this.executeMove(botColor, bestMove.start, bestMove.end);
     }
   }
 
   executeMove(player: TypeColor, start: number, end: number): void {
     let copyBoard = [...this.board];
-
     const prevBoard = [...this.board];
     let moveData = collectMoveData(prevBoard, start, end);
     const isUserPlayer = isSamePlayer(player, this.userColor);

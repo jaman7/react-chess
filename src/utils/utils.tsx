@@ -1,4 +1,6 @@
 import classNames from 'classnames';
+import { useEffect, useRef } from 'react';
+import { isEqual } from 'lodash';
 import { BishopEvalWhite, ColorsPieces, KingEvalWhite, PawnEvalWhite, PiecesNames, RookEvalWhite, ROW_SIZE } from 'store/store.constance';
 import { IPieces, TypeColor } from 'store/Store.model';
 
@@ -105,4 +107,18 @@ export const setCursor = (piece: IPieces, userColor: TypeColor, botRunning: bool
       break;
   }
   return !botRunning ? cursor : 'not-allowed';
+};
+
+export const usePrevious = (value: any): any => {
+  const ref = useRef();
+  useEffect(() => {
+    ref.current = value;
+  });
+  return ref.current;
+};
+
+export const ifChanged = (prev: any, next: any, callback: (value: any) => void): void => {
+  if (!isEqual(prev, next)) {
+    callback(true);
+  }
 };

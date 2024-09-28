@@ -10,7 +10,7 @@ import {
   ROW_SIZE,
 } from 'store/store.constance';
 import { IPieces, TypeColor } from 'store/Store.model';
-import { BishopEvalBlack, isBlack, KingEvalBlack, PawnEvalBlack, RookEvalBlack } from './utils';
+import { BishopEvalBlack, KingEvalBlack, PawnEvalBlack, RookEvalBlack } from './utils';
 
 const {
   PAWN_WHITE,
@@ -50,13 +50,28 @@ export const getPieceValue = (piece: IPieces, position: number): number => {
   const x = Math.floor(position / ROW_SIZE);
   const y = position % ROW_SIZE;
   const pieceValue = baseValue + 10 * evalTable[y][x];
-  return isBlack(piece.player as TypeColor) ? pieceValue : -pieceValue;
+  return pieceValue;
 };
 
 export const evaluateBlack = (pieces: IPieces[]): number => {
   let totalEval = 0;
   for (let i = 0; i < BOARD_SIZE; i++) {
     totalEval += getPieceValue(pieces[i], i);
+  }
+  return totalEval;
+};
+
+export const evaluateBoard = (pieces: IPieces[], botColor: TypeColor): number => {
+  let totalEval = 0;
+  for (let i = 0; i < BOARD_SIZE; i++) {
+    const piece = pieces[i];
+    if (!piece || !piece.name) continue;
+    const pieceValue = getPieceValue(piece, i);
+    if (piece.player === botColor) {
+      totalEval += pieceValue;
+    } else {
+      totalEval -= pieceValue;
+    }
   }
   return totalEval;
 };

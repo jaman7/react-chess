@@ -3,6 +3,7 @@ import { inject, observer } from 'mobx-react';
 import { useMemo } from 'react';
 import { ColorsPieces } from 'store/store.constance';
 import { IStoreProps } from 'store/Store.model';
+import GameLevel from './GameLevel/GameLevel';
 
 const { WHITE, BLACK } = ColorsPieces;
 
@@ -40,6 +41,7 @@ const Menu: React.FC<IStoreProps> = inject('Store')(
     return (
       <div className="menu">
         <Button buttonsConfig={defaultButtons} />
+        <GameLevel />
       </div>
     );
   })

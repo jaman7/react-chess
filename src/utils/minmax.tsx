@@ -1,19 +1,14 @@
-import { ColorsPieces, PiecesNames, ROW_SIZE } from 'store/store.constance';
+import { ColorsPieces } from 'store/store.constance';
 import { IPieces, TypeColor } from 'store/Store.model';
-import { evaluateBlack } from './evaluateValues';
-import { ifCanMove, setMove } from './movs';
-import { isBlack } from './utils';
+import { evaluateBoard } from './evaluateValues';
+import { getPassant, ifCanMove, posibilityMoves, setMove } from './movs';
 
-const { PAWN_WHITE, PAWN_BLACK } = PiecesNames;
 const { WHITE, BLACK } = ColorsPieces;
 
-export const getPassantPositionMinMax = (isBlackPlayer: boolean, start: number, end: number, piece: IPieces): number => {
-  if (piece.name === (isBlackPlayer ? PAWN_BLACK : PAWN_WHITE) && Math.abs(end - start) === 16) {
-    if ((isBlackPlayer && start >= ROW_SIZE && start <= 15) || (!isBlackPlayer && start >= 48 && start <= 55)) {
-      return end;
-    }
-  }
-  return 65;
+const transpositionTable = new Map<string, number>();
+
+const hashBoard = (board: IPieces[]): string => {
+  return board.map(piece => piece?.index ?? '0').join(',');
 };
 
 export const miniMax = (
@@ -21,67 +16,48 @@ export const miniMax = (
   isBotTurn: boolean,
   alpha: number,
   beta: number,
-  pieces: IPieces[],
+  board: IPieces[],
   possibleStartPositions: number[],
   possibleEndPositions: number[],
   passantPos: number,
   botColor: TypeColor
 ): number => {
-  const copyBoard = [...pieces];
-  if (depth === 0) {
-    return evaluateBlack(copyBoard);
-  }
-
-  let bestValue = isBotTurn ? -Infinity : Infinity;
-
+  const boardHash = hashBoard(board);
+  const cachedValue = transpositionTable.get(boardHash);
+  if (cachedValue !== undefined) return cachedValue;
+  if (depth === 0) return evaluateBoard(board, botColor);
   const currentPlayerColor = isBotTurn ? botColor : botColor === BLACK ? WHITE : BLACK;
+  let bestValue = isBotTurn ? -Infinity : Infinity;
+  let moves = posibilityMoves(currentPlayerColor, board, possibleStartPositions, possibleEndPositions);
 
-  for (let i = 0; i < 64; i++) {
-    const start = possibleStartPositions[i];
-    const isPlayerPiece = copyBoard[start].name !== null && copyBoard[start].player === currentPlayerColor;
+  for (const move of moves) {
+    const { start, end } = move;
+    if (ifCanMove(start, end, board, passantPos)) {
+      const newBoard = setMove([...board], start, end);
+      const newPassantPos = getPassant(botColor, newBoard, start, end);
+      const value = miniMax(
+        depth - 1,
+        !isBotTurn,
+        alpha,
+        beta,
+        newBoard,
+        possibleStartPositions,
+        possibleEndPositions,
+        newPassantPos,
+        botColor
+      );
 
-    if (isPlayerPiece) {
-      for (let j = 0; j < 64; j++) {
-        let end = possibleEndPositions[j];
-        if (ifCanMove(start, end, copyBoard, passantPos)) {
-          const testBoard = [...pieces];
-          const testBoard2 = setMove(testBoard, start, end, passantPos);
-
-          let passant = 65;
-          if (
-            testBoard[end].name === (isBlack(currentPlayerColor) ? PAWN_BLACK : PAWN_WHITE) &&
-            start >= (isBlack(currentPlayerColor) ? 8 : 48) &&
-            start <= (isBlack(currentPlayerColor) ? 15 : 55) &&
-            Math.abs(end - start) === (isBlack(currentPlayerColor) ? 16 : -16)
-          ) {
-            passant = end;
-          }
-
-          let value = miniMax(
-            depth - 1,
-            !isBotTurn,
-            alpha,
-            beta,
-            testBoard2,
-            possibleStartPositions,
-            possibleEndPositions,
-            passant,
-            botColor
-          );
-
-          if (isBotTurn) {
-            if (value > bestValue) bestValue = value;
-            alpha = Math.max(alpha, bestValue);
-            if (bestValue >= beta) return bestValue;
-          } else {
-            if (value < bestValue) bestValue = value;
-            beta = Math.min(beta, bestValue);
-            if (bestValue <= alpha) return bestValue;
-          }
-        }
+      if (isBotTurn) {
+        bestValue = Math.max(bestValue, value);
+        alpha = Math.max(alpha, bestValue);
+        if (alpha >= beta) break;
+      } else {
+        bestValue = Math.min(bestValue, value);
+        beta = Math.min(beta, bestValue);
+        if (beta <= alpha) break;
       }
     }
   }
-
+  transpositionTable.set(boardHash, bestValue);
   return bestValue;
 };

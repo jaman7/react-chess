@@ -1,0 +1,58 @@
+.select-component {
+  background-color: $colorBlue;
+  color: $colorGray;
+  font-family: $fontRoboto;
+  border-radius: 0.25rem;
+
+  & .p-dropdown {
+    &-label {
+      font-family: $fontRoboto;
+      padding: 0.25rem;
+      color: $colorGray;
+      font-size: 14px;
+      line-height: initial;
+    }
+
+    &-trigger {
+      padding: 0 0.5rem;
+    }
+  }
+
+  &.p-disabled {
+    background-color: rgba($colorDarkBlue, 60%);
+  }
+}
+
+.select-component-panel {
+  & .p-dropdown {
+    &-items {
+      font-family: $fontRoboto;
+      background-color: $colorGray;
+      margin: 0;
+      padding: 0;
+
+      &-wrapper {
+        border-radius: 0.25rem;
+      }
+    }
+
+    &-item {
+      margin: 0;
+      padding: 4px 8px;
+      color: $colorBlue;
+      font-size: 14px;
+      line-height: initial;
+      transition: all 200ms ease-in-out;
+
+      &.p-highlight {
+        background-color: $colorDarkBlue;
+        color: $colorGray;
+      }
+
+      &:hover {
+        background-color: lighten($colorDarkBlue, 10%);
+        color: $colorGray;
+      }
+    }
+  }
+}

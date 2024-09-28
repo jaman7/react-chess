@@ -19,11 +19,11 @@ const MovsInfo: React.FC<IProps> = ({ Store, isBot = false }) => {
     }
   }, [data.length]);
 
-  const dataPiecesMovs = useMemo(() => data.map(el => el.pieceName).filter(Boolean), [data.length]);
-  const winBY = useMemo(() => data.find(el => el.winBy)?.winBy ?? null, [data.length]);
+  const dataPiecesMovs = useMemo(() => data?.map(el => el.pieceName)?.filter(Boolean) ?? [], [data.length]);
+  const winBY = useMemo(() => data?.find(el => el.winBy)?.winBy ?? null, [data.length]);
 
   const createMoves = useMemo(() => {
-    return data.map((item, i) => (
+    return data?.map((item, i) => (
       <li key={i}>
         <span>{i + 1}</span>
         <span>{item.pieceName}</span>

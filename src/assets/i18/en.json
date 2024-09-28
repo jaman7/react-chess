@@ -14,5 +14,8 @@
       "lost": "Unfortunately, the loss..."
     },
     "nextGame": "Do you want to continue the next game in overtime?"
+  },
+  "form": {
+    "difficulty": "Difficulty level"
   }
 }
