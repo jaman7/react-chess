@@ -1,5 +1,5 @@
-import { configure, makeAutoObservable, runInAction } from 'mobx';
-import { IHistoryMoves, IPieces, IStore, TypeColor } from './Store.model';
+import { configure, makeAutoObservable, runInAction, toJS } from 'mobx';
+import { IHistoryMoves, IParamsCanMove, IPieces, IStore, TypeColor } from './Store.model';
 import { ColorsPieces, NO_MOVE, PiecesNames } from './store.constance';
 import {
   ifCanMove,
@@ -8,12 +8,10 @@ import {
   clearPossibleHighlight,
   highlightMate,
   checkIsMovePiece,
-  initializeBoard,
   isBlack,
   getPassant,
   isWhite,
   setMove,
-  miniMax,
   staleMate,
   setCheckkHighlight,
   clearCheckHighlight,
@@ -23,6 +21,8 @@ import {
   collectIfMate,
   posibilityMoves,
   randPositions,
+  handlePieceSelection,
+  initializeBoard,
 } from 'utils';
 
 const { WHITE, BLACK } = ColorsPieces;
@@ -36,7 +36,7 @@ class Store implements IStore {
   gameStarted: boolean = false;
   isBoardRotated: boolean = false;
   board: IPieces[] = [];
-  activePiece: number | null = -1; // Indeks aktywnej figury
+  activePiece: number | null = -1;
   botColor: TypeColor = BLACK;
   userColor: TypeColor = WHITE;
   currentPlayer: TypeColor = WHITE;
@@ -57,6 +57,11 @@ class Store implements IStore {
   gameTurn: number = -1;
   disableStartBeforeReset: boolean = false;
   difficultyLevel: number = 4;
+
+  constructor() {
+    makeAutoObservable(this);
+    this.board = initializeBoard();
+  }
 
   get isGameStarted(): boolean {
     return this.gameStarted;
@@ -210,33 +215,36 @@ class Store implements IStore {
   }
 
   onFirstClick = (index: number) => {
-    let copyBoard = [...this.board];
-    const selectedPiece = copyBoard[index];
-    if (selectedPiece.player !== this.userColor || !selectedPiece.player) return;
-    copyBoard.forEach((_, i) => {
-      if (copyBoard[i]?.possible) copyBoard[i].setPossible?.(false);
-      if (copyBoard[i]?.possibleCapture) copyBoard[i].setPossibleCapture?.(false);
-    });
-    if (this.activePiece !== null && this.activePiece > -1 && index !== this.activePiece) {
-      const prevSelectedPiece = copyBoard[this.activePiece];
-      prevSelectedPiece?.setHighlight?.(false);
-    }
-    this.activePiece = index;
-    selectedPiece?.setHighlight?.(true);
-    copyBoard.forEach((_, i) => {
-      if (ifCanMove(index, i, this.board)) {
-        if (copyBoard[i]?.name === null) copyBoard[i].setPossible?.(true);
-        if (copyBoard[i]?.name !== null) copyBoard[i].setPossibleCapture?.(true);
-      }
-    });
+    const params: IParamsCanMove = {
+      passantPos: null,
+      passantPosStore: this.passantPos,
+      whiteKingHasMoved: this.whiteKingHasMoved,
+      blackKingHasMoved: this.blackKingHasMoved,
+      rightWhiteRookHasMoved: this.rightWhiteRookHasMoved,
+      leftWhiteRookHasMoved: this.leftWhiteRookHasMoved,
+      rightBlackRookHasMoved: this.rightBlackRookHasMoved,
+      leftBlackRookHasMoved: this.leftBlackRookHasMoved,
+    };
     runInAction(() => {
-      this.board = copyBoard;
+      this.board = handlePieceSelection(toJS(this.board), this.userColor, index, this.activePiece, params);
+      this.activePiece = index;
     });
   };
 
   onSecondClick = (index: number): void => {
     const sourcePiece = this.activePiece as number;
-    if (ifCanMove(sourcePiece, index, this.board)) {
+    const copyBoard = toJS(this.board);
+    const params: IParamsCanMove = {
+      passantPos: null,
+      passantPosStore: this.passantPos,
+      whiteKingHasMoved: this.whiteKingHasMoved,
+      blackKingHasMoved: this.blackKingHasMoved,
+      rightWhiteRookHasMoved: this.rightWhiteRookHasMoved,
+      leftWhiteRookHasMoved: this.leftWhiteRookHasMoved,
+      rightBlackRookHasMoved: this.rightBlackRookHasMoved,
+      leftBlackRookHasMoved: this.leftBlackRookHasMoved,
+    };
+    if (ifCanMove(sourcePiece, index, copyBoard, params)) {
       this.executeMove(this.userColor, sourcePiece, index);
       this.triggerBotMove();
     } else {
@@ -265,8 +273,8 @@ class Store implements IStore {
   }
 
   resetSelection = (): void => {
-    if (this.activePiece !== null && this.activePiece > -1) this.board[this.activePiece]?.setHighlight?.(false);
-    this.board = clearPossibleHighlight(this.board);
+    if (this.activePiece !== null && this.activePiece > -1) this.board[this.activePiece].highlight = false;
+    this.board = clearPossibleHighlight([...toJS(this.board)]);
     this.activePiece = -1;
   };
 
@@ -274,7 +282,7 @@ class Store implements IStore {
     runInAction(() => {
       this.setCurrentBotColor();
 
-      setTimeout(() => this.executeBot(this.difficultyLevel, this.botColor), 700);
+      setTimeout(() => this.executeBot(this.difficultyLevel, this.botColor), 200);
     });
   };
 
@@ -284,43 +292,55 @@ class Store implements IStore {
       this.message = 'Bot cannot run';
       return;
     }
-    const copyBoard = [...this.board];
-    let bestMove = { start: 100, end: 100 };
+    const worker = new Worker(new URL('./worker.ts', import.meta.url), { type: 'module' });
+
+    let copyBoard = [...toJS(this.board)];
     const randStarts = randPositions();
     const randEnds = randPositions();
     const moves = posibilityMoves(botColor, copyBoard, randStarts, randEnds);
     const moveCount = moves.length;
-    let bestValue = -10000;
     if (moveCount === 0) return;
-    for (const move of moves) {
-      const { start, end } = move || {};
-      if (this.repetition >= 2 && start === this.botSecondPos && end === this.botFirstPos) {
-        this.repetition = 0;
-        continue;
+
+    worker.onmessage = e => {
+      const bestMove = e.data; // Get the best move from the worker
+      if (bestMove.start && bestMove.end) {
+        runInAction(() => {
+          if (bestMove.start === this.botSecondPos && bestMove.end === this.botFirstPos) {
+            this.repetition++;
+          } else {
+            this.repetition = 0;
+          }
+          this.executeMove(botColor, bestMove.start, bestMove.end);
+          this.botRunning = false;
+        });
       }
-      const updatedBoard = setMove([...copyBoard], start, end);
-      const passantPos = getPassant(botColor, copyBoard, start, end);
-      const evaluation = miniMax(depth - 1, false, -10000, 10000, updatedBoard, randStarts, randEnds, passantPos, botColor);
-      if (evaluation > bestValue) {
-        bestValue = evaluation;
-        bestMove = { start, end };
-      }
-    }
-    if (bestMove.end !== 100) {
-      runInAction(() => {
-        if (bestMove.start === this.botSecondPos && bestMove.end === this.botFirstPos) {
-          this.repetition++;
-        } else {
-          this.repetition = 0;
-        }
-        this.executeMove(botColor, bestMove.start, bestMove.end);
-      });
-    }
+    };
+
+    const params = {
+      passantPos: null,
+      passantPosStore: this.passantPos,
+      whiteKingHasMoved: this.whiteKingHasMoved,
+      blackKingHasMoved: this.blackKingHasMoved,
+      rightWhiteRookHasMoved: this.rightWhiteRookHasMoved,
+      leftWhiteRookHasMoved: this.leftWhiteRookHasMoved,
+      rightBlackRookHasMoved: this.rightBlackRookHasMoved,
+      leftBlackRookHasMoved: this.leftBlackRookHasMoved,
+    };
+
+    worker.postMessage({
+      moves,
+      copyBoard,
+      botColor,
+      randStarts,
+      randEnds,
+      depth,
+      params,
+    });
   }
 
   executeMove(player: TypeColor, start: number, end: number): void {
-    let copyBoard = [...this.board];
-    const prevBoard = [...this.board];
+    let copyBoard = [...toJS(this.board)];
+    const prevBoard = [...toJS(this.board)];
     let moveData = collectMoveData(prevBoard, start, end);
     const isUserPlayer = isSamePlayer(player, this.userColor);
     const isBotPlayer = isSamePlayer(player, this.botColor);
@@ -331,21 +351,32 @@ class Store implements IStore {
 
     this.checkKingOrRookHasMoved(player, copyBoard, start);
 
-    copyBoard = [...setMove(copyBoard, start, end)];
+    copyBoard = [
+      ...setMove(copyBoard, start, end, {
+        passantPosStore: this.passantPos,
+      }),
+    ];
+    const params = {
+      passantPos: null,
+      passantPosStore: this.passantPos,
+      whiteKingHasMoved: this.whiteKingHasMoved,
+      blackKingHasMoved: this.blackKingHasMoved,
+      rightWhiteRookHasMoved: this.rightWhiteRookHasMoved,
+      leftWhiteRookHasMoved: this.leftWhiteRookHasMoved,
+      rightBlackRookHasMoved: this.rightBlackRookHasMoved,
+      leftBlackRookHasMoved: this.leftBlackRookHasMoved,
+    };
     const passant = getPassant(player, copyBoard, start, end);
-    copyBoard[start].setIndex(start);
-    copyBoard[end].setIndex(end);
+    const checkMated = checkMate(WHITE, copyBoard, params) || checkMate(BLACK, copyBoard, params);
+    const staleMated = (staleMate(WHITE, copyBoard, params) && isBlack(player)) || (staleMate(BLACK, copyBoard, params) && isWhite(player));
 
-    const checkMated = checkMate(WHITE, copyBoard) || checkMate(BLACK, copyBoard);
-    const staleMated = (staleMate(WHITE, copyBoard) && isBlack(player)) || (staleMate(BLACK, copyBoard) && isWhite(player));
-
-    if (checkIsMovePiece(oppositeColor, copyBoard) && (!checkMated || !staleMated)) {
+    if (checkIsMovePiece(oppositeColor, copyBoard, params) && (!checkMated || !staleMated)) {
       copyBoard = setCheckkHighlight(oppositeColor, copyBoard);
     } else {
       copyBoard = clearCheckHighlight(player, copyBoard);
     }
 
-    copyBoard = highlightMate(oppositeColor, copyBoard, checkMate(oppositeColor, copyBoard), staleMate(oppositeColor, copyBoard));
+    copyBoard = highlightMate(oppositeColor, copyBoard, checkMated, staleMated);
 
     this.passantPos = passant;
 
@@ -398,11 +429,6 @@ class Store implements IStore {
         }
       }
     });
-  }
-
-  constructor() {
-    makeAutoObservable(this);
-    this.board = initializeBoard();
   }
 }
 

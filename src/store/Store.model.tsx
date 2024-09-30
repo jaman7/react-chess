@@ -1,14 +1,18 @@
-import FillerPiece from 'components/pieces/FillerPiece';
-import Bishop from 'components/pieces/PieceBishop';
-import King from 'components/pieces/PieceKing';
-import Knight from 'components/pieces/PieceKnight';
-import Pawn from 'components/pieces/PiecePawn';
-import Queen from 'components/pieces/PieceQuenn';
-import Rook from 'components/pieces/PieceRook';
-
-export type IPieces = FillerPiece | Rook | Queen | Pawn | Knight | King | Bishop;
+import { PiecesNames } from './store.constance';
 
 export type TypeColor = 'WHITE' | 'BLACK';
+
+export interface IPieces {
+  index?: number;
+  player?: TypeColor | null;
+  name?: PiecesNames | null;
+  field?: string;
+  highlight?: boolean;
+  possible?: boolean;
+  possibleCapture?: boolean;
+  inCheck?: boolean;
+  checked?: number;
+}
 
 export type TypePieceName =
   | 'PAWN_WHITE'
@@ -24,6 +28,8 @@ export type TypePieceName =
   | 'QUEEN_WHITE'
   | 'QUEEN_BLACK'
   | '';
+
+export type TypePieceNameShort = 'ROOK' | 'KNIGHT' | 'BISHOP' | 'QUEEN' | 'KING' | 'PAWN' | null;
 
 export type Square =
   | 'a8'
@@ -103,6 +109,17 @@ export interface IMoves {
 
 export interface IHistoryMoves {
   [name: string]: IMoves[];
+}
+
+export interface IParamsCanMove {
+  passantPos?: number | null;
+  passantPosStore?: number | null;
+  whiteKingHasMoved?: boolean;
+  blackKingHasMoved?: boolean;
+  rightWhiteRookHasMoved?: boolean;
+  leftWhiteRookHasMoved?: boolean;
+  rightBlackRookHasMoved?: boolean;
+  leftBlackRookHasMoved?: boolean;
 }
 
 export interface IStore {

@@ -20,7 +20,7 @@ export const isSamePlayer = (player1: TypeColor, player2: TypeColor): boolean =>
 export const isSamePlayerTurn = (playColor: TypeColor, userColor: TypeColor, currentColor: TypeColor): boolean =>
   playColor === userColor && userColor === currentColor;
 
-export const reverseArray = <T,>(array: T[]): T[] => [...array].reverse();
+export const reverseArray = <T>(array: T[]): T[] => [...array].reverse();
 
 export const PawnEvalBlack = reverseArray(PawnEvalWhite);
 export const BishopEvalBlack = reverseArray(BishopEvalWhite);

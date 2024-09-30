@@ -23,7 +23,10 @@ const PlayerInfo: React.FC<IProps> = ({ Store, isBot = false }) => {
   const color = (isBot ? botColor : userColor) as TypeColor;
 
   const isActivePlayer = useMemo(
-    () => gameStarted && !mated && isSamePlayer(color, currentPlayer as TypeColor) && !botRunning,
+    () =>
+      gameStarted &&
+      !mated &&
+      ((isSamePlayer(color, currentPlayer as TypeColor) && !botRunning) || (isSamePlayer(color, currentPlayer as TypeColor) && botRunning)),
     [gameStarted, mated, color, currentPlayer, botRunning]
   );
 

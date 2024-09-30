@@ -5,4 +5,6 @@ export * from './initBoard';
 export * from './mates';
 export * from './minmax';
 export * from './movs';
+export * from './rule';
 export * from './utils';
+export * from './create-form';

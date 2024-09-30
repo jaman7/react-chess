@@ -1,5 +1,5 @@
 import { ColorsPieces } from 'store/store.constance';
-import { IPieces, TypeColor } from 'store/Store.model';
+import { IParamsCanMove, IPieces, TypeColor } from 'store/Store.model';
 import { evaluateBoard } from './evaluateValues';
 import { getPassant, ifCanMove, posibilityMoves, setMove } from './movs';
 
@@ -19,8 +19,8 @@ export const miniMax = (
   board: IPieces[],
   possibleStartPositions: number[],
   possibleEndPositions: number[],
-  passantPos: number,
-  botColor: TypeColor
+  botColor: TypeColor,
+  params: IParamsCanMove
 ): number => {
   const boardHash = hashBoard(board);
   const cachedValue = transpositionTable.get(boardHash);
@@ -32,20 +32,16 @@ export const miniMax = (
 
   for (const move of moves) {
     const { start, end } = move;
-    if (ifCanMove(start, end, board, passantPos)) {
-      const newBoard = setMove([...board], start, end);
+    if (ifCanMove(start, end, board, params)) {
+      const newBoard = setMove([...board], start, end, {
+        ...params,
+        passantPos: null,
+      });
       const newPassantPos = getPassant(botColor, newBoard, start, end);
-      const value = miniMax(
-        depth - 1,
-        !isBotTurn,
-        alpha,
-        beta,
-        newBoard,
-        possibleStartPositions,
-        possibleEndPositions,
-        newPassantPos,
-        botColor
-      );
+      const value = miniMax(depth - 1, !isBotTurn, alpha, beta, newBoard, possibleStartPositions, possibleEndPositions, botColor, {
+        ...params,
+        passantPos: newPassantPos,
+      });
 
       if (isBotTurn) {
         bestValue = Math.max(bestValue, value);

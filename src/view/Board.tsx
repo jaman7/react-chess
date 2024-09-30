@@ -4,6 +4,7 @@ import Tile from './Tile';
 import { ROW_SIZE } from 'store/store.constance';
 import { calcSquareColor, setCursor } from 'utils';
 import React from 'react';
+import { toJS } from 'mobx';
 
 const Board: React.FC<IStoreProps> = ({ Store }) => {
   const { board = [], isBoardRotated, botRunning = false, mated, userColor } = Store || {};
@@ -19,7 +20,7 @@ const Board: React.FC<IStoreProps> = ({ Store }) => {
       return (
         <Tile
           key={index}
-          icon={piece.icon}
+          name={piece?.name ?? null}
           color={tileColor}
           cursor={cursor}
           className={isBoardRotated ? 'rotated' : ''}

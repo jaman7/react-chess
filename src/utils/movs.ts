@@ -1,16 +1,24 @@
-import FillerPiece from 'components/pieces/FillerPiece';
-import Queen from 'components/pieces/PieceQuenn';
-import { BOARD_SIZE, ColorsPieces, PiecesNames } from 'store/store.constance';
-import { IPieces, TypeColor } from 'store/Store.model';
-import { getRowCol, isBlack, isWhite, shuffle } from './utils';
-import Store from 'store/Store';
 import { produce } from 'immer';
+import { BOARD_SIZE, ColorsPieces, PiecesNames, PiecesNameShort } from 'store/store.constance';
+import { IParamsCanMove, IPieces, TypeColor } from 'store/Store.model';
+import { getRowCol, isBlack, isWhite, shuffle } from './utils';
+import { isCanMove } from './rule';
+import { setPiece } from './initBoard';
 
 const { WHITE, BLACK } = ColorsPieces;
 const { PAWN_WHITE, PAWN_BLACK, ROOK_WHITE, ROOK_BLACK, KING_WHITE, KING_BLACK, BISHOP_WHITE, BISHOP_BLACK, QUEEN_WHITE, QUEEN_BLACK } =
   PiecesNames;
+const { QUEEN } = PiecesNameShort;
 
-export const checkCastling = (start: number, end: number, pieces: IPieces[]): boolean => {
+export const checkCastling = (start: number, end: number, pieces: IPieces[], params: IParamsCanMove): boolean => {
+  const {
+    whiteKingHasMoved,
+    blackKingHasMoved,
+    rightWhiteRookHasMoved,
+    leftWhiteRookHasMoved,
+    rightBlackRookHasMoved,
+    leftBlackRookHasMoved,
+  } = params || {};
   const copyPieces = [...pieces];
   const player = copyPieces[start].player as TypeColor;
   const deltaPos = end - start;
@@ -18,18 +26,19 @@ export const checkCastling = (start: number, end: number, pieces: IPieces[]): bo
   const isBlackPlayer = isBlack(player);
   if (start !== (isWhitePlayer ? 60 : 4)) return false;
   if ((deltaPos === 2 ? copyPieces[end + 1]?.name : copyPieces[end - 2]?.name) !== (isWhitePlayer ? ROOK_WHITE : ROOK_BLACK)) return false;
-  if (isWhitePlayer ? Store.whiteKingHasMoved : Store.blackKingHasMoved) return false;
+  if (isWhitePlayer ? whiteKingHasMoved : blackKingHasMoved) return false;
   if (isBlackPlayer) {
-    if (deltaPos === 2 ? Store.rightWhiteRookHasMoved : Store.leftWhiteRookHasMoved) return false;
+    if (deltaPos === 2 ? rightWhiteRookHasMoved : leftWhiteRookHasMoved) return false;
   } else if (isBlackPlayer) {
-    if (deltaPos === 2 ? Store.rightBlackRookHasMoved : Store.leftBlackRookHasMoved) return false;
+    if (deltaPos === 2 ? rightBlackRookHasMoved : leftBlackRookHasMoved) return false;
   }
   return true;
 };
 
-export const checkIsPawn = (start: number, end: number, pieces: IPieces[], passantPos?: number): boolean => {
+export const checkIsPawn = (start: number, end: number, pieces: IPieces[], params: IParamsCanMove): boolean => {
   const copyPieces = [...pieces];
-  const passant = passantPos ?? Store.passantPos;
+  const { passantPos, passantPosStore } = params || {};
+  const passant = passantPos ?? passantPosStore;
   const { row: startRow, col: startCol } = getRowCol(start);
   const { row: endRow, col: endCol } = getRowCol(end);
   const rowDiff = endRow - startRow;
@@ -64,7 +73,7 @@ export const isBlockersExist = (start: number, end: number, pieces: IPieces[]): 
   return false;
 };
 
-export const isInvalidMove = (start: number, end: number, pieces: IPieces[], passantPos?: number): boolean => {
+export const isInvalidMove = (start: number, end: number, pieces: IPieces[], params: IParamsCanMove): boolean => {
   const copyPieces = [...pieces];
   const pieceName = copyPieces[start].name;
   const bqrpk = [
@@ -81,50 +90,51 @@ export const isInvalidMove = (start: number, end: number, pieces: IPieces[], pas
   ].includes(pieceName as PiecesNames);
   if (bqrpk && isBlockersExist(start, end, copyPieces)) return true;
   if (pieceName === PAWN_WHITE || pieceName === PAWN_BLACK) {
-    if (!checkIsPawn(start, end, copyPieces, passantPos)) return true;
+    if (!checkIsPawn(start, end, copyPieces, params)) return true;
   }
   if ([KING_WHITE, KING_BLACK].includes(pieceName as PiecesNames) && Math.abs(end - start) === 2) {
-    return !checkCastling(start, end, copyPieces);
+    return !checkCastling(start, end, copyPieces, params);
   }
   return false;
 };
 
-export const checkIsMovePiece = (player: TypeColor, pieces: IPieces[]): boolean => {
+export const checkIsMovePiece = (player: TypeColor, pieces: IPieces[], params: IParamsCanMove): boolean => {
   const copyPieces = [...pieces];
   const king = isWhite(player) ? KING_WHITE : KING_BLACK;
   let positionOfKing = copyPieces.findIndex(p => p.name === king);
   for (let i = 0; i < BOARD_SIZE; i++) {
     if (copyPieces[i].player !== player) {
-      if (copyPieces[i].canMove(i, positionOfKing) && !isInvalidMove(i, positionOfKing, copyPieces)) return true;
+      if (isCanMove(copyPieces[i].name as PiecesNames, i, positionOfKing) && !isInvalidMove(i, positionOfKing, copyPieces, params))
+        return true;
     }
   }
   return false;
 };
 
-export const ifCanMove = (start: number, end: number, pieces: IPieces[], passantPos?: number): boolean => {
+export const ifCanMove = (start: number, end: number, pieces: IPieces[], params: IParamsCanMove = {}): boolean => {
   if (start === end) return false;
   const copyPieces = [...pieces];
   const player = copyPieces[start].player as TypeColor;
-  if (player === copyPieces[end].player || !copyPieces[start].canMove(start, end)) return false;
-  if (isInvalidMove(start, end, copyPieces, passantPos)) return false;
+  if (player === copyPieces[end].player || !isCanMove(copyPieces[start].name as PiecesNames, start, end)) return false;
+  if (isInvalidMove(start, end, copyPieces, params)) return false;
   const cantCastle =
     copyPieces[start].name === (isWhite(player) ? KING_WHITE : KING_BLACK) &&
     Math.abs(end - start) === 2 &&
-    checkIsMovePiece(player, copyPieces);
+    checkIsMovePiece(player, copyPieces, params);
   if (cantCastle) return false;
   if ([KING_WHITE, KING_BLACK].includes(copyPieces[start].name as PiecesNames) && Math.abs(end - start) === 2) {
     const deltaPos = end - start;
     const testPieces = produce(copyPieces, draft => {
       draft[start + (deltaPos === 2 ? 1 : -1)] = draft[start];
-      draft[start] = new FillerPiece(null, start);
+      draft[start] = setPiece(start);
     });
-    if (checkIsMovePiece(player, testPieces)) return false;
+    if (checkIsMovePiece(player, testPieces, params)) return false;
   }
   const checkPieces = produce(copyPieces, draft => {
     draft[end] = draft[start];
-    draft[start] = new FillerPiece(null, start);
+    draft[start] = setPiece(start);
   });
-  if (checkIsMovePiece(player, checkPieces)) return false;
+  if (checkIsMovePiece(player, checkPieces, params)) return false;
   return true;
 };
 
@@ -150,57 +160,57 @@ export const posibilityMoves = (
   starts: number[],
   ends: number[]
 ): { start: number; end: number }[] => {
-  let moves: { start: number; end: number }[] = [];
-  for (let i = 0; i < 64; i++) {
-    let start = starts[i];
-    let isBotPiece = pieces[start].name != null && pieces[start].player === player;
-    if (isBotPiece) {
-      for (let j = 0; j < 64; j++) {
-        let end = ends[j];
-        if (ifCanMove(start, end, pieces)) {
-          moves.push({ start, end });
-        }
+  return starts.reduce(
+    (moves, start) => {
+      if (pieces[start]?.player === player) {
+        ends.forEach(end => {
+          if (ifCanMove(start, end, pieces)) {
+            moves.push({ start, end });
+          }
+        });
       }
-    }
-  }
-  return moves;
+      return moves;
+    },
+    [] as { start: number; end: number }[]
+  );
 };
 
-export const setMove = (pieces: IPieces[], start: number, end: number, passantPos?: number): IPieces[] => {
+export const setMove = (pieces: IPieces[], start: number, end: number, params: IParamsCanMove = {}): IPieces[] => {
+  const { passantPos = null, passantPosStore = null } = params || {};
   const copyBoard = produce(pieces, draft => {
     const isKing = draft[start].name === KING_WHITE || draft[start].name === KING_BLACK;
     if (isKing && Math.abs(end - start) === 2) {
       if (end === (draft[start].name === KING_WHITE ? 62 : 6)) {
         draft[end - 1] = draft[end + 1];
-        draft[end - 1].setHighlight?.(true);
-        draft[end + 1] = new FillerPiece(null, end + 1);
-        draft[end + 1].setHighlight?.(true);
+        draft[end - 1].highlight = true;
+        draft[end + 1] = setPiece(end + 1);
+        draft[end + 1].highlight = true;
       } else if (end === (draft[start].name === KING_WHITE ? 58 : 2)) {
         draft[end + 1] = draft[end - 2];
-        draft[end + 1].setHighlight?.(true);
-        draft[end - 2] = new FillerPiece(null, end - 2);
-        draft[end - 2].setHighlight?.(true);
+        draft[end + 1].highlight = true;
+        draft[end - 2] = setPiece(end - 1);
+        draft[end - 2].highlight = true;
       }
     }
-    const passant = passantPos ?? Store.passantPos;
+    const passant = passantPos ?? passantPosStore;
     if (draft[start].name === PAWN_WHITE && (end - start === -7 || end - start === 9)) {
       if (start + 1 === passant) {
-        draft[start + 1] = new FillerPiece(null, start + 1);
-        draft[start + 1].setHighlight?.(true);
+        draft[start + 1] = setPiece(start + 1);
+        draft[start + 1].highlight = true;
       }
     }
     draft[end] = draft[start];
-    draft[end].setHighlight?.(true);
-    draft[start] = new FillerPiece(null, start);
-    draft[start].setHighlight?.(true);
+    draft[end].highlight = true;
+    draft[start] = setPiece(start);
+    draft[start].highlight = true;
     if ([PAWN_WHITE, PAWN_BLACK].includes(draft[end].name as PiecesNames)) {
       if (end >= 0 && end <= 7) {
-        draft[end] = new Queen(WHITE, end);
-        draft[end].setHighlight?.(true);
+        draft[end] = setPiece(end, { player: WHITE, name: QUEEN });
+        draft[end].highlight = true;
       }
       if (end >= 56 && end <= 63) {
-        draft[end] = new Queen(BLACK, end);
-        draft[end].setHighlight?.(true);
+        draft[end] = setPiece(end, { player: BLACK, name: QUEEN });
+        draft[end].highlight = true;
       }
     }
   });
